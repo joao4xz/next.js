@@ -4,8 +4,8 @@ import { isPersistentCachingEnabledForBuild } from '../../shared/lib/turbopack/u
 import { NextBuildContext } from '../build-context'
 import { createDefineEnv, loadBindings } from '../swc'
 import {
-  rawEntrypointsToEntrypoints,
   handleRouteType,
+  rawEntrypointsToEntrypoints,
 } from '../handle-entrypoints'
 import { TurbopackManifestLoader } from '../../shared/lib/turbopack/manifest-loader'
 import { promises as fs } from 'fs'
@@ -104,10 +104,12 @@ export async function turbopackBuild(): Promise<{
 
     let appDirOnly = NextBuildContext.appDirOnly!
     const entrypoints = await project.writeAllEntrypointsToDisk(appDirOnly)
-    printBuildErrors(entrypoints)
+    printBuildErrors(entrypoints, dev)
 
     if (!('routes' in entrypoints)) {
-      throw new Error('Turbopack build failed')
+      // This should never ever happen, there should be an error issue, or the bindings call should
+      // have thrown.
+      throw new Error(`Turbopack build failed`)
     }
 
     const hasPagesEntries = Array.from(entrypoints.routes.values()).some(
@@ -128,12 +130,6 @@ export async function turbopackBuild(): Promise<{
       distDir,
       encryptionKey,
     })
-
-    if (!('routes' in entrypoints)) {
-      // This should never ever happen, there should be an error issue, or the bindings call should
-      // have thrown.
-      throw new Error(`Turbopack build failed`)
-    }
 
     const currentEntrypoints = await rawEntrypointsToEntrypoints(entrypoints)
 
