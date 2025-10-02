@@ -949,12 +949,6 @@ export default async function build(
           )
         )
       loadedConfig = config
-      if (config.experimental.lockDistDir) {
-        await Lockfile.acquireOrExit(
-          path.join(config.distDir, 'lock'),
-          'next build'
-        )
-      }
 
       // Reading the config can modify environment variables that influence the bundler selection.
       bundler = finalizeBundlerFromConfig(bundler)
@@ -1126,6 +1120,15 @@ export default async function build(
       if (!distDirCreated || !(await isWriteable(distDir))) {
         throw new Error(
           '> Build directory is not writeable. https://nextjs.org/docs/messages/build-dir-not-writeable'
+        )
+      }
+
+      if (config.experimental.lockDistDir) {
+        // This leaks the lock file descriptor. That's okay, it'll be cleaned up by the OS upon
+        // process exit.
+        await Lockfile.acquireOrExit(
+          path.join(config.distDir, 'lock'),
+          'next build'
         )
       }
 

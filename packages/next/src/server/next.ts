@@ -14,7 +14,8 @@ import './node-polyfill-crypto'
 import type { default as NextNodeServer } from './next-server'
 import * as log from '../build/output/log'
 import loadConfig from './config'
-import path from 'path'
+import path from 'node:path'
+import { mkdirSync } from 'node:fs'
 import { NON_STANDARD_NODE_ENV } from '../lib/constants'
 import {
   PHASE_DEVELOPMENT_SERVER,
@@ -121,6 +122,7 @@ export class NextServer implements NextWrapperServer {
   private reqHandler?: NodeRequestHandler
   private reqHandlerPromise?: Promise<NodeRequestHandler>
   private preparedAssetPrefix?: string
+  private lockfile?: Lockfile
 
   public options: NextServerOptions
 
@@ -250,6 +252,9 @@ export class NextServer implements NextWrapperServer {
     if (this.server) {
       await this.server.close()
     }
+    if (this.lockfile !== undefined) {
+      await this.lockfile.unlock()
+    }
   }
 
   private async createServer(
@@ -311,7 +316,8 @@ export class NextServer implements NextWrapperServer {
       this.serverPromise = this[SYMBOL_LOAD_CONFIG]().then(async (conf) => {
         if (this.options.dev) {
           if (conf.experimental.lockDistDir) {
-            await Lockfile.acquireOrExit(
+            mkdirSync(conf.distDir, { recursive: true })
+            this.lockfile = await Lockfile.acquireOrExit(
               path.join(conf.distDir, 'lock'),
               'next dev'
             )

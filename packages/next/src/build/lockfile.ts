@@ -14,6 +14,10 @@ import type { Binding, Lockfile as NativeLockfile } from './swc/types'
  *
  * This provides a more idiomatic wrapper around the lockfile APIs exposed on
  * the native bindings object.
+ *
+ * If this lock is not explicitly closed with `unlock`, it will leak the lock
+ * and file descriptor. The operating system will clean up the lock and file
+ * descriptor upon process exit.
  */
 export class Lockfile {
   /**
